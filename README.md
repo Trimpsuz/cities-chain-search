@@ -1,6 +1,32 @@
 # Cities Chain Search
 
-A geonames helper for [cities chain](https://github.com/GlutenFreeGrapes/cities-chain). Find valid cities from a geonames dump with an easy interface. Currently, the project comes with a geonames dump for Finland from 2024-11-17, located in the `public` directory. This file can be modified to support other countries.
+A geonames helper for [cities chain](https://github.com/GlutenFreeGrapes/cities-chain). Find valid cities from a geonames dump with an easy interface.
+
+## Features
+
+- Search one or more countries
+- Filter by population and start/end names
+- Toggle options incl.
+  - Convert accented characters (e.g. `ö` to `o`).
+  - Search alternate names of cities.
+- Mark cities as `used` to keep track of which cities have already been guessed
+  - Option to display only unused cities in the search results.
+- Local storage is used to save:
+  - Filter settings (e.g., minimum population, selected countries, starts/ends with values).
+  - City usage status (used/unused).
+- Cities are loaded from the [official cities chain bot repo](https://github.com/GlutenFreeGrapes/cities-chain) to ensure up-to-date data.
+
+## Usage
+
+Visit https://cities.trimpsuz.dev  
+OR locally:
+
+```bash
+git clone https://github.com/Trimpsuz/cities-chain-search
+cd cities-chain-search
+bun install
+bun run dev
+```
 
 ## Contributing
 

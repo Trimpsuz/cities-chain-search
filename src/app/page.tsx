@@ -2,22 +2,63 @@
 
 import React, { useState, useEffect } from 'react';
 import removeAccents from 'remove-accents';
+import Multiselect from 'multiselect-react-dropdown';
+import { removeSpecial } from './utils/helpers';
+import type { City } from './types';
+import { Modal } from './components/Modal';
 
-interface City {
-  id: string;
+interface Country {
+  code: string;
   name: string;
-  population: number;
-  alternateNames?: string;
 }
 
 export default function Home() {
+  const [countries, setCountries] = useState<{ code: string; name: string }[]>([]);
   const [cities, setCities] = useState<City[]>([]);
-  const [minPopulation, setMinPopulation] = useState('');
+  const [minPopulation, setMinPopulation] = useState('1000');
   const [startsWith, setStartsWith] = useState('');
   const [endsWith, setEndsWith] = useState('');
   const [convertCharacters, setConvertCharacters] = useState(false);
   const [searchAlternateNames, setSearchAlternateNames] = useState(false);
   const [filterAltnames, setFilterAltnames] = useState(false);
+  const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
+  const [usedCities, setUsedCities] = useState<Set<string>>(new Set());
+  const [showUnusedCitiesOnly, setShowUnusedCitiesOnly] = useState(false);
+  const [isModalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    const savedMinPopulation = localStorage.getItem('minPopulation');
+    const savedSelectedCountries = localStorage.getItem('selectedCountries');
+    const savedStartsWith = localStorage.getItem('startsWith');
+    const savedEndsWith = localStorage.getItem('endsWith');
+    const savedConvertCharacters = localStorage.getItem('convertCharacters');
+    const savedSearchAlternateNames = localStorage.getItem('searchAlternateNames');
+    const savedFilterAltnames = localStorage.getItem('filterAltnames');
+    const savedUsedCities = localStorage.getItem('usedCities');
+    const savedShowUnusedCitiesOnly = localStorage.getItem('showUnusedCitiesOnly');
+
+    if (savedMinPopulation) setMinPopulation(savedMinPopulation);
+    if (savedSelectedCountries) setSelectedCountries(JSON.parse(savedSelectedCountries));
+    if (savedStartsWith) setStartsWith(savedStartsWith);
+    if (savedEndsWith) setEndsWith(savedEndsWith);
+    if (savedConvertCharacters) setConvertCharacters(JSON.parse(savedConvertCharacters));
+    if (savedSearchAlternateNames) setSearchAlternateNames(JSON.parse(savedSearchAlternateNames));
+    if (savedFilterAltnames) setFilterAltnames(JSON.parse(savedFilterAltnames));
+    if (savedUsedCities) setUsedCities(new Set(JSON.parse(savedUsedCities)));
+    if (savedShowUnusedCitiesOnly) setShowUnusedCitiesOnly(JSON.parse(savedShowUnusedCitiesOnly));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('minPopulation', minPopulation);
+    localStorage.setItem('selectedCountries', JSON.stringify(selectedCountries));
+    localStorage.setItem('startsWith', startsWith);
+    localStorage.setItem('endsWith', endsWith);
+    localStorage.setItem('convertCharacters', JSON.stringify(convertCharacters));
+    localStorage.setItem('searchAlternateNames', JSON.stringify(searchAlternateNames));
+    localStorage.setItem('filterAltnames', JSON.stringify(filterAltnames));
+    localStorage.setItem('usedCities', JSON.stringify(Array.from(usedCities)));
+    localStorage.setItem('showUnusedCitiesOnly', JSON.stringify(showUnusedCitiesOnly));
+  }, [minPopulation, selectedCountries, startsWith, endsWith, convertCharacters, searchAlternateNames, filterAltnames, usedCities, showUnusedCitiesOnly]);
 
   const fetchCities = async () => {
     const params = new URLSearchParams();
@@ -27,14 +68,49 @@ export default function Home() {
     params.append('convertCharacters', String(convertCharacters));
     params.append('searchAlternateNames', String(searchAlternateNames));
 
-    const response = await fetch(`/api/cities?${params.toString()}`);
-    const data = await response.json();
-    setCities(data);
+    if (selectedCountries.length > 0) {
+      const countryCodes = selectedCountries.map((country) => country.code);
+      params.append('countries', countryCodes.join(','));
+
+      const response = await fetch(`/api/cities?${params.toString()}`);
+      const data = await response.json();
+      setCities(data);
+    } else {
+      setCities([]);
+    }
   };
 
   useEffect(() => {
     fetchCities();
-  }, [minPopulation, startsWith, endsWith, convertCharacters, searchAlternateNames]);
+  }, [minPopulation, startsWith, endsWith, convertCharacters, searchAlternateNames, selectedCountries]);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      const response = await fetch('/api/countries');
+      const data = await response.json();
+      setCountries(data);
+    };
+    fetchCountries();
+  }, []);
+
+  const toggleUsedCity = (cityId: string) => {
+    setUsedCities((prev) => {
+      const newUsedCities = new Set(prev);
+      if (newUsedCities.has(cityId)) {
+        newUsedCities.delete(cityId);
+      } else {
+        newUsedCities.add(cityId);
+      }
+      return newUsedCities;
+    });
+  };
+
+  const clearAllUsedCities = () => {
+    setUsedCities(new Set());
+    setModalOpen(false);
+  };
+
+  const filteredCities = showUnusedCitiesOnly ? cities.filter((city) => !usedCities.has(city.id)) : cities;
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -46,56 +122,109 @@ export default function Home() {
           </svg>
         </a>
       </div>
+
       <div style={{ marginBottom: '1rem' }}>
-        <label>
-          Min Population:
-          <input type="number" value={minPopulation} onChange={(e) => setMinPopulation(e.target.value)} />
-        </label>
+        <Multiselect
+          options={countries}
+          selectedValues={selectedCountries}
+          displayValue="name"
+          onSelect={(selectedList: Country[]) => setSelectedCountries(selectedList)}
+          onRemove={(selectedList: Country[]) => setSelectedCountries(selectedList)}
+          closeIcon="cancel"
+          showCheckbox={true}
+          avoidHighlightFirstOption={true}
+          placeholder="Select Countries"
+          isObject={true}
+          style={{
+            optionContainer: {
+              backgroundColor: '#0a0a0a',
+            },
+            option: {
+              color: '#ededed',
+            },
+          }}
+        />
+        <button
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#ff4d4d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginTop: '1rem',
+          }}
+          onClick={() => setSelectedCountries([])}
+        >
+          Deselect All
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <label>Min Population: </label>
+        <input type="number" value={minPopulation} onChange={(e) => setMinPopulation(e.target.value)} />
       </div>
       <div style={{ marginBottom: '1rem' }}>
-        <label>
-          Starts With:
-          <input type="text" value={startsWith} onChange={(e) => setStartsWith(e.target.value)} />
-        </label>
+        <label>Starts With: </label>
+        <input type="text" value={startsWith} onChange={(e) => setStartsWith(e.target.value)} />
       </div>
       <div style={{ marginBottom: '1rem' }}>
-        <label>
-          Ends With:
-          <input type="text" value={endsWith} onChange={(e) => setEndsWith(e.target.value)} />
-        </label>
+        <label>Ends With: </label>
+        <input type="text" value={endsWith} onChange={(e) => setEndsWith(e.target.value)} />
       </div>
       <div style={{ marginBottom: '1rem' }}>
-        <label>
-          Convert Accent Characters: <input type="checkbox" checked={convertCharacters} onChange={(e) => setConvertCharacters(e.target.checked)} />
-        </label>
+        <label>Convert Accent Characters: </label>
+        <input type="checkbox" style={{ cursor: 'pointer' }} checked={convertCharacters} onChange={(e) => setConvertCharacters(e.target.checked)} />
       </div>
       <div style={{ marginBottom: '1rem' }}>
-        <label>
-          Search Alternate Names: <input type="checkbox" checked={searchAlternateNames} onChange={(e) => setSearchAlternateNames(e.target.checked)} />
-        </label>
+        <label>Search Alternate Names: </label>
+        <input type="checkbox" style={{ cursor: 'pointer' }} checked={searchAlternateNames} onChange={(e) => setSearchAlternateNames(e.target.checked)} />
       </div>
       <div style={{ marginBottom: '1rem' }}>
-        <label>
-          Only Show Compatible Alternate Names: <input type="checkbox" checked={filterAltnames} onChange={(e) => setFilterAltnames(e.target.checked)} />
-        </label>
+        <label>Only Show Compatible Alternate Names: </label>
+        <input type="checkbox" style={{ cursor: 'pointer' }} checked={filterAltnames} onChange={(e) => setFilterAltnames(e.target.checked)} />
       </div>
-      <button style={{ marginBottom: '1rem' }} onClick={fetchCities}>
+      <div style={{ marginBottom: '1rem' }}>
+        <label>Only Show Unused Cities: </label>
+        <input type="checkbox" checked={showUnusedCitiesOnly} onChange={() => setShowUnusedCitiesOnly(!showUnusedCitiesOnly)} />
+        <br />
+        <button
+          style={{
+            padding: '2px 8px',
+            backgroundColor: '#ff4d4d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+          onClick={() => setModalOpen(true)}
+        >
+          Clear All Used Cities
+        </button>
+      </div>
+      <button style={{ marginBottom: '1rem', cursor: 'pointer' }} onClick={fetchCities}>
         Search
       </button>
+
+      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onConfirm={clearAllUsedCities} />
+
       <ul>
-        {cities.map((city) => (
+        {filteredCities.map((city) => (
           <li key={city.id}>
+            <button style={{ cursor: 'pointer' }} onClick={() => toggleUsedCity(city.id)}>
+              {usedCities.has(city.id) ? '✅' : '❌'}
+            </button>{' '}
             {city.name} (Population: {city.population})
             {city.alternateNames?.length
               ? filterAltnames
                 ? convertCharacters
                   ? ` [Alt Names: ${city.alternateNames
                       .split(',')
-                      .filter((name) => removeAccents(name.toLowerCase()).startsWith(removeAccents(startsWith.toLowerCase())))
+                      .filter((name) => removeAccents(removeSpecial(name.toLowerCase())).startsWith(removeAccents(removeSpecial(startsWith.toLowerCase()))))
                       .join(', ')}]`
                   : ` [Alt Names: ${city.alternateNames
                       .split(',')
-                      .filter((name) => name.toLowerCase().startsWith(startsWith.toLowerCase()))
+                      .filter((name) => removeSpecial(name.toLowerCase()).startsWith(removeSpecial(startsWith.toLowerCase())))
                       .join(', ')}]`
                 : ` [Alt Names: ${city.alternateNames.split(',').join(', ')}]`
               : ''}
