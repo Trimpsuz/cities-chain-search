@@ -85,8 +85,6 @@ export default function Home() {
         if (!startsWith && !endsWith) return setCities([]);
         params.append('countries', 'all');
       } else {
-        console.log(countries.length);
-        console.log(selectedCountries.length);
         params.append('countries', selectedCountries.map((country) => country.code).join(','));
       }
 
