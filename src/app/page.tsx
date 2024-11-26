@@ -6,6 +6,7 @@ import Multiselect from 'multiselect-react-dropdown';
 import { removeSpecial } from './utils/helpers';
 import type { City } from './types';
 import { Modal } from './components/Modal';
+import axios from 'axios';
 
 interface Country {
   code: string;
@@ -24,7 +25,10 @@ export default function Home() {
   const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
   const [usedCities, setUsedCities] = useState<Set<string>>(new Set());
   const [showUnusedCitiesOnly, setShowUnusedCitiesOnly] = useState(false);
-  const [isModalOpen, setModalOpen] = useState(false);
+  const [isClearModalOpen, setClearModalOpen] = useState(false);
+  const [isSelectAllModalOpen, setSelectAllModalOpen] = useState(false);
+  const [sortOption, setSortOption] = useState('alphabetical');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   useEffect(() => {
     const savedMinPopulation = localStorage.getItem('minPopulation');
@@ -36,6 +40,8 @@ export default function Home() {
     const savedFilterAltnames = localStorage.getItem('filterAltnames');
     const savedUsedCities = localStorage.getItem('usedCities');
     const savedShowUnusedCitiesOnly = localStorage.getItem('showUnusedCitiesOnly');
+    const savedSortOption = localStorage.getItem('sortOption');
+    const savedSortDirection = localStorage.getItem('sortDirection');
 
     if (savedMinPopulation) setMinPopulation(savedMinPopulation);
     if (savedSelectedCountries) setSelectedCountries(JSON.parse(savedSelectedCountries));
@@ -46,6 +52,8 @@ export default function Home() {
     if (savedFilterAltnames) setFilterAltnames(JSON.parse(savedFilterAltnames));
     if (savedUsedCities) setUsedCities(new Set(JSON.parse(savedUsedCities)));
     if (savedShowUnusedCitiesOnly) setShowUnusedCitiesOnly(JSON.parse(savedShowUnusedCitiesOnly));
+    if (savedSortOption) setSortOption(savedSortOption);
+    if (savedSortDirection) setSortDirection(savedSortDirection);
   }, []);
 
   useEffect(() => {
@@ -58,9 +66,13 @@ export default function Home() {
     localStorage.setItem('filterAltnames', JSON.stringify(filterAltnames));
     localStorage.setItem('usedCities', JSON.stringify(Array.from(usedCities)));
     localStorage.setItem('showUnusedCitiesOnly', JSON.stringify(showUnusedCitiesOnly));
-  }, [minPopulation, selectedCountries, startsWith, endsWith, convertCharacters, searchAlternateNames, filterAltnames, usedCities, showUnusedCitiesOnly]);
+    localStorage.setItem('sortOption', sortOption);
+    localStorage.setItem('sortDirection', sortDirection);
+  }, [minPopulation, selectedCountries, startsWith, endsWith, convertCharacters, searchAlternateNames, filterAltnames, usedCities, showUnusedCitiesOnly, sortOption, sortDirection]);
 
   const fetchCities = async () => {
+    if (countries.length === 0) return;
+
     const params = new URLSearchParams();
     if (minPopulation) params.append('minPopulation', minPopulation);
     if (startsWith) params.append('startsWith', startsWith);
@@ -69,12 +81,17 @@ export default function Home() {
     params.append('searchAlternateNames', String(searchAlternateNames));
 
     if (selectedCountries.length > 0) {
-      const countryCodes = selectedCountries.map((country) => country.code);
-      params.append('countries', countryCodes.join(','));
+      if (selectedCountries.length === countries.length) {
+        if (!startsWith && !endsWith) return setCities([]);
+        params.append('countries', 'all');
+      } else {
+        console.log(countries.length);
+        console.log(selectedCountries.length);
+        params.append('countries', selectedCountries.map((country) => country.code).join(','));
+      }
 
-      const response = await fetch(`/api/cities?${params.toString()}`);
-      const data = await response.json();
-      setCities(data);
+      const data = (await axios.get(`/api/cities?${params.toString()}`)).data;
+      setCities(sortCities(data));
     } else {
       setCities([]);
     }
@@ -82,12 +99,11 @@ export default function Home() {
 
   useEffect(() => {
     fetchCities();
-  }, [minPopulation, startsWith, endsWith, convertCharacters, searchAlternateNames, selectedCountries]);
+  }, [minPopulation, startsWith, endsWith, convertCharacters, searchAlternateNames, selectedCountries, countries]);
 
   useEffect(() => {
     const fetchCountries = async () => {
-      const response = await fetch('/api/countries');
-      const data = await response.json();
+      const data = (await axios.get('/api/countries')).data;
       setCountries(data);
     };
     fetchCountries();
@@ -107,8 +123,38 @@ export default function Home() {
 
   const clearAllUsedCities = () => {
     setUsedCities(new Set());
-    setModalOpen(false);
+    setClearModalOpen(false);
   };
+
+  const selectAllCountries = () => {
+    setSelectedCountries(countries);
+    setSelectAllModalOpen(false);
+  };
+
+  const sortCities = (citiesToSort: City[]) => {
+    const sortedCities = [...citiesToSort];
+    sortedCities.sort((a, b) => {
+      let comparison = 0;
+
+      if (sortOption === 'alphabetical') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortOption === 'population') {
+        comparison = a.population - b.population;
+      } else if (sortOption === 'usedStatus') {
+        const aUsed = usedCities.has(a.id);
+        const bUsed = usedCities.has(b.id);
+        comparison = aUsed === bUsed ? 0 : aUsed ? 1 : -1;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return sortedCities;
+  };
+
+  useEffect(() => {
+    setCities(sortCities(cities));
+  }, [sortOption, sortDirection, usedCities]);
 
   const filteredCities = showUnusedCitiesOnly ? cities.filter((city) => !usedCities.has(city.id)) : cities;
 
@@ -144,49 +190,64 @@ export default function Home() {
             },
           }}
         />
-        <button
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#ff4d4d',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            marginTop: '1rem',
-          }}
-          onClick={() => setSelectedCountries([])}
-        >
-          Deselect All
-        </button>
+        <div style={{ marginTop: '1rem' }}>
+          <button
+            style={{
+              padding: '8px 16px',
+              marginRight: '10px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            onClick={() => setSelectAllModalOpen(true)}
+          >
+            Select All
+          </button>
+          <button
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#ff4d4d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            onClick={() => setSelectedCountries([])}
+          >
+            Deselect All
+          </button>
+        </div>
       </div>
 
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '0.5rem' }}>
         <label>Min Population: </label>
         <input type="number" value={minPopulation} onChange={(e) => setMinPopulation(e.target.value)} />
       </div>
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '0.5rem' }}>
         <label>Starts With: </label>
         <input type="text" value={startsWith} onChange={(e) => setStartsWith(e.target.value)} />
       </div>
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '0.5rem' }}>
         <label>Ends With: </label>
         <input type="text" value={endsWith} onChange={(e) => setEndsWith(e.target.value)} />
       </div>
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '0.5rem' }}>
         <label>Convert Accent Characters: </label>
         <input type="checkbox" style={{ cursor: 'pointer' }} checked={convertCharacters} onChange={(e) => setConvertCharacters(e.target.checked)} />
       </div>
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '0.5rem' }}>
         <label>Search Alternate Names: </label>
         <input type="checkbox" style={{ cursor: 'pointer' }} checked={searchAlternateNames} onChange={(e) => setSearchAlternateNames(e.target.checked)} />
       </div>
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '0.5rem' }}>
         <label>Only Show Compatible Alternate Names: </label>
         <input type="checkbox" style={{ cursor: 'pointer' }} checked={filterAltnames} onChange={(e) => setFilterAltnames(e.target.checked)} />
       </div>
-      <div style={{ marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '0.5rem' }}>
         <label>Only Show Unused Cities: </label>
-        <input type="checkbox" checked={showUnusedCitiesOnly} onChange={() => setShowUnusedCitiesOnly(!showUnusedCitiesOnly)} />
+        <input type="checkbox" style={{ cursor: 'pointer' }} checked={showUnusedCitiesOnly} onChange={() => setShowUnusedCitiesOnly(!showUnusedCitiesOnly)} />
         <br />
         <button
           style={{
@@ -197,16 +258,33 @@ export default function Home() {
             borderRadius: '4px',
             cursor: 'pointer',
           }}
-          onClick={() => setModalOpen(true)}
+          onClick={() => setClearModalOpen(true)}
         >
           Clear All Used Cities
+        </button>
+      </div>
+      <div style={{ marginBottom: '0.5rem', flexDirection: 'column' }}>
+        <label>Sort: </label>
+        <select style={{ cursor: 'pointer' }} value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
+          <option value="alphabetical">Alphabetical</option>
+          <option value="population">Population</option>
+          <option value="usedStatus">Used/Unused</option>
+        </select>
+        <button style={{ cursor: 'pointer', marginLeft: '0.5rem' }} onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}>
+          {sortDirection === 'asc' ? '⬆️ Ascending' : '⬇️ Descending'}
         </button>
       </div>
       <button style={{ marginBottom: '1rem', cursor: 'pointer' }} onClick={fetchCities}>
         Search
       </button>
 
-      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onConfirm={clearAllUsedCities} />
+      <Modal isOpen={isClearModalOpen} onClose={() => setClearModalOpen(false)} onConfirm={clearAllUsedCities} text="Are you sure you want to clear all used cities?" />
+      <Modal
+        isOpen={isSelectAllModalOpen}
+        onClose={() => setSelectAllModalOpen(false)}
+        onConfirm={selectAllCountries}
+        text="Are you sure you want to select all countries? Selecting all can make the site slow."
+      />
 
       <ul>
         {filteredCities.map((city) => (

@@ -26,11 +26,12 @@ export async function GET(req: NextRequest) {
     const minPopulation = searchParams.get('minPopulation');
     const startsWith = searchParams.get('startsWith');
     const endsWith = searchParams.get('endsWith');
-    const countries = searchParams.get('countries');
+    let countries = searchParams.get('countries');
     const convertCharacters = searchParams.get('convertCharacters') === 'true';
     const searchAlternateNames = searchParams.get('searchAlternateNames') === 'true';
 
-    if (!countries) return NextResponse.json([]);
+    if (!countries || (countries === 'all' && !startsWith && !endsWith)) return NextResponse.json([]);
+    if (countries === 'all') countries = null;
 
     let filteredCities = cities;
 

@@ -17,6 +17,9 @@ export const parseGeonames = (data: string): City[] => {
     const latitude = parseFloat(fields[8]) || 0;
     const longitude = parseFloat(fields[9]) || 0;
     const isDefault = fields[7] === '1';
+    const isDeleted = fields[15] === '1';
+
+    if (isDeleted) continue;
 
     if (!cityMap[id]) {
       cityMap[id] = {

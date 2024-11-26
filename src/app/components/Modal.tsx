@@ -1,4 +1,4 @@
-export const Modal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: () => void }) => {
+export const Modal = ({ isOpen, onClose, onConfirm, text }: { isOpen: boolean; onClose: () => void; onConfirm: () => void; text: string }) => {
   if (!isOpen) return null;
 
   return (
@@ -48,7 +48,7 @@ export const Modal = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose
         </button>
 
         <h2 style={{ color: '#0a0a0a' }}>Confirm Action</h2>
-        <p style={{ color: '#0a0a0a' }}>Are you sure you want to clear all used cities?</p>
+        <p style={{ color: '#0a0a0a' }}>{text}</p>
         <div style={{ marginTop: '1rem' }}>
           <button
             style={{

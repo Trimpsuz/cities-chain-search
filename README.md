@@ -6,15 +6,16 @@ A geonames helper for [cities chain](https://github.com/GlutenFreeGrapes/cities-
 
 - Search one or more countries
 - Filter by population and start/end names
+- Sort by population, alphabetical order or used status
 - Toggle options incl.
-  - Convert accented characters (e.g. `ö` to `o`).
-  - Search alternate names of cities.
+  - Convert accented characters (e.g. `ö` to `o`)
+  - Search alternate names of cities
 - Mark cities as `used` to keep track of which cities have already been guessed
-  - Option to display only unused cities in the search results.
+  - Option to display only unused cities in the search results
 - Local storage is used to save:
-  - Filter settings (e.g., minimum population, selected countries, starts/ends with values).
-  - City usage status (used/unused).
-- Cities are loaded from the [official cities chain bot repo](https://github.com/GlutenFreeGrapes/cities-chain) to ensure up-to-date data.
+  - Filter settings (e.g., minimum population, selected countries, starts/ends with values)
+  - City usage status (used/unused)
+- Cities are loaded from the [official cities chain bot repo](https://github.com/GlutenFreeGrapes/cities-chain) to ensure up-to-date data
 
 ## Usage
 
