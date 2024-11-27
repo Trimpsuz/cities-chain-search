@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import removeAccents from 'remove-accents';
+import anyAscii from 'any-ascii';
 import Multiselect from 'multiselect-react-dropdown';
 import { removeSpecial } from './utils/helpers';
 import type { City } from './types';
@@ -232,7 +232,7 @@ export default function Home() {
         <input type="text" value={endsWith} onChange={(e) => setEndsWith(e.target.value)} />
       </div>
       <div style={{ marginBottom: '0.5rem' }}>
-        <label>Convert Accent Characters: </label>
+        <label>Romanize Characters: </label>
         <input type="checkbox" style={{ cursor: 'pointer' }} checked={convertCharacters} onChange={(e) => setConvertCharacters(e.target.checked)} />
       </div>
       <div style={{ marginBottom: '0.5rem' }}>
@@ -296,7 +296,7 @@ export default function Home() {
                 ? convertCharacters
                   ? ` [Alt Names: ${city.alternateNames
                       .split(',')
-                      .filter((name) => removeAccents(removeSpecial(name.toLowerCase())).startsWith(removeAccents(removeSpecial(startsWith.toLowerCase()))))
+                      .filter((name) => anyAscii(removeSpecial(name.toLowerCase())).startsWith(anyAscii(removeSpecial(startsWith.toLowerCase()))))
                       .join(', ')}]`
                   : ` [Alt Names: ${city.alternateNames
                       .split(',')

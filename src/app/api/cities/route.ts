@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { parseGeonames } from '../../utils/parseGeonames';
-import removeAccents from 'remove-accents';
+import anyAscii from 'any-ascii';
 import { removeSpecial } from '../../utils/helpers';
 import type { City } from '../../types';
 
@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
       let endsWithNormalized = endsWith ? removeSpecial(endsWith.toLowerCase()) : '';
 
       if (convertCharacters) {
-        startsWithNormalized = removeAccents(startsWithNormalized);
-        endsWithNormalized = removeAccents(endsWithNormalized);
+        startsWithNormalized = anyAscii(startsWithNormalized);
+        endsWithNormalized = anyAscii(endsWithNormalized);
       }
 
       filteredCities = filteredCities.filter((city) => {
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
           let normalized = removeSpecial(name.toLowerCase());
 
           if (convertCharacters) {
-            normalized = removeAccents(normalized);
+            normalized = anyAscii(normalized);
           }
 
           const startsWithCondition = startsWithNormalized ? normalized.startsWith(startsWithNormalized) : true;
