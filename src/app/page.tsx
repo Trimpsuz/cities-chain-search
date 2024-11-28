@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import anyAscii from 'any-ascii';
 import Multiselect from 'multiselect-react-dropdown';
 import { removeSpecial } from './utils/helpers';
@@ -16,6 +16,7 @@ interface Country {
 export default function Home() {
   const [countries, setCountries] = useState<{ code: string; name: string }[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const citiesRef = useRef<City[]>(cities);
   const [minPopulation, setMinPopulation] = useState('1000');
   const [startsWith, setStartsWith] = useState('');
   const [endsWith, setEndsWith] = useState('');
@@ -29,6 +30,10 @@ export default function Home() {
   const [isSelectAllModalOpen, setSelectAllModalOpen] = useState(false);
   const [sortOption, setSortOption] = useState('alphabetical');
   const [sortDirection, setSortDirection] = useState('asc');
+
+  useEffect(() => {
+    citiesRef.current = cities;
+  }, [cities]);
 
   useEffect(() => {
     const savedMinPopulation = localStorage.getItem('minPopulation');
@@ -64,7 +69,7 @@ export default function Home() {
     localStorage.setItem('convertCharacters', JSON.stringify(convertCharacters));
     localStorage.setItem('searchAlternateNames', JSON.stringify(searchAlternateNames));
     localStorage.setItem('filterAltnames', JSON.stringify(filterAltnames));
-    localStorage.setItem('usedCities', JSON.stringify(Array.from(usedCities)));
+    if (usedCities.size !== 0) localStorage.setItem('usedCities', JSON.stringify(Array.from(usedCities)));
     localStorage.setItem('showUnusedCitiesOnly', JSON.stringify(showUnusedCitiesOnly));
     localStorage.setItem('sortOption', sortOption);
     localStorage.setItem('sortDirection', sortDirection);
@@ -72,8 +77,9 @@ export default function Home() {
 
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'usedCities' && event.newValue !== null) {
+      if (event.key === 'usedCities' && event.newValue !== null && event.newValue !== event.oldValue) {
         setUsedCities(new Set(JSON.parse(event.newValue)));
+        setCities(sortCities(citiesRef.current));
       }
     };
 
