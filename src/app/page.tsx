@@ -70,6 +70,20 @@ export default function Home() {
     localStorage.setItem('sortDirection', sortDirection);
   }, [minPopulation, selectedCountries, startsWith, endsWith, convertCharacters, searchAlternateNames, filterAltnames, usedCities, showUnusedCitiesOnly, sortOption, sortDirection]);
 
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'usedCities' && event.newValue !== null) {
+        setUsedCities(new Set(JSON.parse(event.newValue)));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   const fetchCities = async () => {
     if (countries.length === 0) return;
 
