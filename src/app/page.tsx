@@ -162,6 +162,14 @@ export default function Home() {
         const aUsed = usedCities.has(a.id);
         const bUsed = usedCities.has(b.id);
         comparison = aUsed === bUsed ? 0 : aUsed ? 1 : -1;
+      } else if (sortOption === 'nameLength') {
+        const aNames = searchAlternateNames ? [a.name, ...(a.alternateNames?.split(',').filter((name) => name.trim() !== '') || [])] : [a.name];
+        const bNames = searchAlternateNames ? [b.name, ...(b.alternateNames?.split(',').filter((name) => name.trim() !== '') || [])] : [b.name];
+
+        const aMinLength = Math.min(...aNames.map((name) => name.length));
+        const bMinLength = Math.min(...bNames.map((name) => name.length));
+
+        comparison = aMinLength - bMinLength;
       }
 
       return sortDirection === 'asc' ? comparison : -comparison;
@@ -287,6 +295,7 @@ export default function Home() {
           <option value="alphabetical">Alphabetical</option>
           <option value="population">Population</option>
           <option value="usedStatus">Used/Unused</option>
+          <option value="nameLength">Length</option>
         </select>
         <button style={{ cursor: 'pointer', marginLeft: '0.5rem' }} onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}>
           {sortDirection === 'asc' ? '⬆️ Ascending' : '⬇️ Descending'}
