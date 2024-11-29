@@ -316,11 +316,18 @@ export default function Home() {
                 ? convertCharacters
                   ? ` [Alt Names: ${city.alternateNames
                       .split(',')
-                      .filter((name) => anyAscii(removeSpecial(name.toLowerCase())).startsWith(anyAscii(removeSpecial(startsWith.toLowerCase()))))
+                      .filter(
+                        (name) =>
+                          anyAscii(removeSpecial(name.toLowerCase())).startsWith(anyAscii(removeSpecial(startsWith.toLowerCase()))) &&
+                          anyAscii(removeSpecial(name.toLowerCase())).endsWith(anyAscii(removeSpecial(endsWith.toLowerCase())))
+                      )
                       .join(', ')}]`
                   : ` [Alt Names: ${city.alternateNames
                       .split(',')
-                      .filter((name) => removeSpecial(name.toLowerCase()).startsWith(removeSpecial(startsWith.toLowerCase())))
+                      .filter(
+                        (name) =>
+                          removeSpecial(name.toLowerCase()).startsWith(removeSpecial(startsWith.toLowerCase())) && removeSpecial(name.toLowerCase()).endsWith(removeSpecial(endsWith.toLowerCase()))
+                      )
                       .join(', ')}]`
                 : ` [Alt Names: ${city.alternateNames.split(',').join(', ')}]`
               : ''}
