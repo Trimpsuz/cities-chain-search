@@ -247,7 +247,7 @@ export default function Home() {
     localStorage.setItem('usedCities', JSON.stringify([]));
     if (user) saveUsedCitiesToDatabase(user.id, new Set());
     setClearModalOpen(false);
-  }, [localStorage, user]);
+  }, [user]);
 
   const selectAllCountries = useCallback(() => {
     setSelectedCountries(countries);
