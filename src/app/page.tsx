@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import anyAscii from 'any-ascii';
 import Multiselect from 'multiselect-react-dropdown';
 import { removeSpecial } from './utils/helpers';
@@ -242,17 +242,44 @@ export default function Home() {
     if (user) saveUsedCitiesToDatabase(user.id, newUsedCities);
   };
 
-  const clearAllUsedCities = () => {
+  const clearAllUsedCities = useCallback(() => {
     setUsedCities(new Set());
     localStorage.setItem('usedCities', JSON.stringify([]));
     if (user) saveUsedCitiesToDatabase(user.id, new Set());
     setClearModalOpen(false);
-  };
+  }, [localStorage, user]);
 
-  const selectAllCountries = () => {
+  const selectAllCountries = useCallback(() => {
     setSelectedCountries(countries);
     setSelectAllModalOpen(false);
-  };
+  }, [countries]);
+
+  const handleCloseClearModal = useCallback(() => setClearModalOpen(false), []);
+  const handleCloseSelectAllModal = useCallback(() => setSelectAllModalOpen(false), []);
+
+  const clearModal = useMemo(
+    () => (
+      <Modal
+        isOpen={isClearModalOpen}
+        onClose={handleCloseClearModal}
+        onConfirm={clearAllUsedCities}
+        text="Are you sure you want to clear all used cities? If you are logged in this will clear the from all your devices."
+      />
+    ),
+    [isClearModalOpen, clearAllUsedCities, handleCloseClearModal]
+  );
+
+  const selectAllModal = useMemo(
+    () => (
+      <Modal
+        isOpen={isSelectAllModalOpen}
+        onClose={handleCloseSelectAllModal}
+        onConfirm={selectAllCountries}
+        text="Are you sure you want to select all countries? Selecting all can make the site slow."
+      />
+    ),
+    [isSelectAllModalOpen, selectAllCountries, handleCloseSelectAllModal]
+  );
 
   const sortCities = (citiesToSort: City[]) => {
     const sortedCities = [...citiesToSort];
@@ -452,18 +479,8 @@ export default function Home() {
         Search
       </button>
 
-      <Modal
-        isOpen={isClearModalOpen}
-        onClose={() => setClearModalOpen(false)}
-        onConfirm={clearAllUsedCities}
-        text="Are you sure you want to clear all used cities? If you are logged in this will clear the from all your devices."
-      />
-      <Modal
-        isOpen={isSelectAllModalOpen}
-        onClose={() => setSelectAllModalOpen(false)}
-        onConfirm={selectAllCountries}
-        text="Are you sure you want to select all countries? Selecting all can make the site slow."
-      />
+      {clearModal}
+      {selectAllModal}
 
       <ul>
         {filteredCities.map((city) => (

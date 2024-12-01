@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@million/lint": "^1.0.13",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.46.2",
     "any-ascii": "^0.3.2",
