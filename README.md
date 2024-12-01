@@ -16,6 +16,7 @@ A geonames helper for [cities chain](https://github.com/GlutenFreeGrapes/cities-
   - Filter settings (e.g., minimum population, selected countries, starts/ends with values)
   - City usage status (used/unused)
 - Cities are loaded from the [official cities chain bot repo](https://github.com/GlutenFreeGrapes/cities-chain) to ensure up-to-date data
+- Log in with discord via supabase to save used cities across devices
 
 ## Usage
 

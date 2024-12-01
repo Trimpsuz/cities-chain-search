@@ -7,13 +7,115 @@ import { removeSpecial } from './utils/helpers';
 import type { City } from './types';
 import { Modal } from './components/Modal';
 import axios from 'axios';
+import { supabase } from '@/lib/supabaseClient';
 
 interface Country {
   code: string;
   name: string;
 }
 
+const saveUsedCitiesToDatabase = async (userId: string, usedCities: Set<string>) => {
+  const citiesArray = Array.from(usedCities);
+  const { data, error } = await supabase.from('user_used_cities').select('*').eq('user_id', userId).single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching used cities:', error.message);
+    return;
+  }
+
+  if (data) {
+    const { error: updateError } = await supabase.from('user_used_cities').update({ used_cities: citiesArray }).eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Error updating used cities:', updateError.message);
+    }
+  } else {
+    const { error: insertError } = await supabase.from('user_used_cities').insert([{ user_id: userId, used_cities: citiesArray }]);
+
+    if (insertError) {
+      console.error('Error inserting used cities:', insertError.message);
+    }
+  }
+};
+
+const fetchUsedCitiesFromDatabase = async (userId: string) => {
+  const { data, error } = await supabase.from('user_used_cities').select('used_cities').eq('user_id', userId).single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching used cities:', error.message);
+    return [];
+  }
+
+  return data?.used_cities || [];
+};
+
 export default function Home() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data?.user || null);
+
+      if (data?.user) {
+        const citiesFromDb = await fetchUsedCitiesFromDatabase(data.user.id);
+        if (citiesFromDb) setUsedCities(new Set(citiesFromDb));
+        const savedUsedCities = localStorage.getItem('usedCities');
+        if (citiesFromDb.length === 0 && savedUsedCities && JSON.parse(savedUsedCities).length !== 0) saveUsedCitiesToDatabase(data.user.id, new Set(JSON.parse(savedUsedCities)));
+      }
+
+      setLoading(false);
+    })();
+
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchUsedCitiesFromDatabase(session.user.id).then((cities) => {
+          if (cities) setUsedCities(new Set(cities));
+        });
+      }
+    });
+
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const subscription = supabase
+      .channel('user_used_cities')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_used_cities' }, (payload) => {
+        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+          setUsedCities(new Set(payload.new.used_cities || []));
+          if (payload.new.used_cities.length === 0) localStorage.setItem('usedCities', JSON.stringify([]));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user]);
+
+  const handleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+    });
+
+    if (error) console.error('Error logging in with Discord:', error.message);
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Error logging out:', error.message);
+    else setUser(null);
+  };
+
   const [countries, setCountries] = useState<{ code: string; name: string }[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const citiesRef = useRef<City[]>(cities);
@@ -128,19 +230,22 @@ export default function Home() {
   }, []);
 
   const toggleUsedCity = (cityId: string) => {
-    setUsedCities((prev) => {
-      const newUsedCities = new Set(prev);
-      if (newUsedCities.has(cityId)) {
-        newUsedCities.delete(cityId);
-      } else {
-        newUsedCities.add(cityId);
-      }
-      return newUsedCities;
-    });
+    const newUsedCities = new Set(usedCities);
+    if (newUsedCities.has(cityId)) {
+      newUsedCities.delete(cityId);
+    } else {
+      newUsedCities.add(cityId);
+    }
+
+    setUsedCities(newUsedCities);
+
+    if (user) saveUsedCitiesToDatabase(user.id, newUsedCities);
   };
 
   const clearAllUsedCities = () => {
     setUsedCities(new Set());
+    localStorage.setItem('usedCities', JSON.stringify([]));
+    if (user) saveUsedCitiesToDatabase(user.id, new Set());
     setClearModalOpen(false);
   };
 
@@ -184,6 +289,8 @@ export default function Home() {
 
   const filteredCities = showUnusedCitiesOnly ? cities.filter((city) => !usedCities.has(city.id)) : cities;
 
+  if (loading) return <p>Loading...</p>;
+
   return (
     <div style={{ padding: '2rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
@@ -193,6 +300,46 @@ export default function Home() {
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.13 0 0 .67-.22 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.11.16 1.93.08 2.13.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
           </svg>
         </a>
+        <div style={{ display: 'flex', flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+          {!user ? (
+            <button
+              style={{
+                padding: '8px 16px',
+                cursor: 'pointer',
+                backgroundColor: '#5865F2',
+                color: '#ededed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: 'none',
+                borderRadius: '4px',
+              }}
+              onClick={handleLogin}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" fill="#ededed" width="20" height="20">
+                <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+              </svg>
+              Log in
+            </button>
+          ) : (
+            <button
+              style={{
+                padding: '8px 16px',
+                cursor: 'pointer',
+                backgroundColor: '#5865F2',
+                color: '#ededed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: 'none',
+                borderRadius: '4px',
+              }}
+              onClick={handleLogout}
+            >
+              {user?.user_metadata?.name.split('#')[0] || 'User'}, Log out
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
@@ -305,7 +452,12 @@ export default function Home() {
         Search
       </button>
 
-      <Modal isOpen={isClearModalOpen} onClose={() => setClearModalOpen(false)} onConfirm={clearAllUsedCities} text="Are you sure you want to clear all used cities?" />
+      <Modal
+        isOpen={isClearModalOpen}
+        onClose={() => setClearModalOpen(false)}
+        onConfirm={clearAllUsedCities}
+        text="Are you sure you want to clear all used cities? If you are logged in this will clear the from all your devices."
+      />
       <Modal
         isOpen={isSelectAllModalOpen}
         onClose={() => setSelectAllModalOpen(false)}
