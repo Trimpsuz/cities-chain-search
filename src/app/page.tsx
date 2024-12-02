@@ -8,6 +8,7 @@ import type { City } from './types';
 import { Modal } from './components/Modal';
 import axios from 'axios';
 import { supabase } from '@/lib/supabaseClient';
+import { SpinnerCircular } from 'spinners-react';
 
 interface Country {
   code: string;
@@ -316,7 +317,9 @@ export default function Home() {
 
   const filteredCities = showUnusedCitiesOnly ? cities.filter((city) => !usedCities.has(city.id)) : cities;
 
-  if (loading) return <p>Loading...</p>;
+  const spinner = useMemo(() => <SpinnerCircular size={50} thickness={100} speed={100} color="rgba(0, 150, 251, 1)" secondaryColor="rgba(237, 237, 237, 0.44)" />, []);
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>{spinner}</div>;
 
   return (
     <div style={{ padding: '2rem' }}>
