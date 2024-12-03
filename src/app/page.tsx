@@ -305,6 +305,10 @@ export default function Home() {
         comparison = aMinLength - bMinLength;
       }
 
+      if (sortOption !== 'alphabetical' && comparison === 0) {
+        comparison = a.name.localeCompare(b.name);
+      }
+
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
