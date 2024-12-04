@@ -62,6 +62,17 @@ export const CityList = ({
         >
           {items.map((virtualRow) => {
             const city = filteredCities[virtualRow.index];
+            const altNames = city.alternateNames
+              .split(',')
+              .filter((name) => {
+                const processedName = convertCharacters ? anyAscii(removeSpecial(name.toLowerCase())) : removeSpecial(name.toLowerCase());
+
+                return (
+                  processedName.startsWith(convertCharacters ? anyAscii(removeSpecial(startsWith.toLowerCase())) : removeSpecial(startsWith.toLowerCase())) &&
+                  processedName.endsWith(convertCharacters ? anyAscii(removeSpecial(endsWith.toLowerCase())) : removeSpecial(endsWith.toLowerCase()))
+                );
+              })
+              .join(', ');
 
             return (
               <div key={virtualRow.key} ref={virtualizer.measureElement} data-index={virtualRow.index}>
@@ -69,26 +80,7 @@ export const CityList = ({
                   {usedCities.has(city.id) ? '✅' : '❌'}
                 </button>{' '}
                 {city.name} (Population: {city.population})
-                {city.alternateNames?.length
-                  ? filterAltnames
-                    ? convertCharacters
-                      ? ` [Alt Names: ${city.alternateNames
-                          .split(',')
-                          .filter(
-                            (name) =>
-                              anyAscii(removeSpecial(name.toLowerCase())).startsWith(anyAscii(removeSpecial(startsWith.toLowerCase()))) &&
-                              anyAscii(removeSpecial(name.toLowerCase())).endsWith(anyAscii(removeSpecial(endsWith.toLowerCase())))
-                          )
-                          .join(', ')}]`
-                      : ` [Alt Names: ${city.alternateNames
-                          .split(',')
-                          .filter(
-                            (name) =>
-                              removeSpecial(name.toLowerCase()).startsWith(removeSpecial(startsWith.toLowerCase())) && removeSpecial(name.toLowerCase()).endsWith(removeSpecial(endsWith.toLowerCase()))
-                          )
-                          .join(', ')}]`
-                    : ` [Alt Names: ${city.alternateNames.split(',').join(', ')}]`
-                  : ''}
+                {city.alternateNames?.length ? (filterAltnames ? (altNames ? ` [Alt Names: ${altNames}]` : '') : ` [Alt Names: ${city.alternateNames.split(',').join(', ')}]`) : ''}
               </div>
             );
           })}
