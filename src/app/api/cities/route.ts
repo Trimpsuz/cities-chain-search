@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const minPopulation = searchParams.get('minPopulation');
     const startsWith = searchParams.get('startsWith');
     const endsWith = searchParams.get('endsWith');
+    const includes = searchParams.get('includes');
     let countries = searchParams.get('countries');
     const convertCharacters = searchParams.get('convertCharacters') === 'true';
     const searchAlternateNames = searchParams.get('searchAlternateNames') === 'true';
@@ -66,6 +67,41 @@ export async function GET(req: NextRequest) {
           const endsWithCondition = endsWithNormalized ? normalized.endsWith(endsWithNormalized) : true;
 
           return startsWithCondition && endsWithCondition;
+        };
+
+        const cityNameMatches = checkCityName(city.name);
+        const alternateNamesMatch = searchAlternateNames
+          ? city.alternateNames
+              .split(',')
+              .map((name: string) => checkCityName(name))
+              .some(Boolean)
+          : false;
+
+        return cityNameMatches || alternateNamesMatch;
+      });
+    }
+
+    if (includes) {
+      let parsedIncludes = includes
+        .replace(/^[;]+|[;]+$/g, '')
+        .split(';')
+        .map((str) => str.toLowerCase());
+
+      if (convertCharacters) {
+        parsedIncludes = parsedIncludes.map((str) => anyAscii(str));
+      }
+
+      filteredCities = filteredCities.filter((city) => {
+        const checkCityName = (name: string) => {
+          let normalized = name.toLowerCase();
+
+          if (convertCharacters) {
+            normalized = anyAscii(normalized);
+          }
+
+          const includesCondition = parsedIncludes.length > 0 ? parsedIncludes.every((str) => normalized.includes(str)) : true;
+
+          return includesCondition;
         };
 
         const cityNameMatches = checkCityName(city.name);

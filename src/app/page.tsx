@@ -124,6 +124,7 @@ export default function Home() {
   const [minPopulation, setMinPopulation] = useState('1000');
   const [startsWith, setStartsWith] = useState('');
   const [endsWith, setEndsWith] = useState('');
+  const [includes, setIncludes] = useState('');
   const [convertCharacters, setConvertCharacters] = useState(false);
   const [searchAlternateNames, setSearchAlternateNames] = useState(false);
   const [filterAltnames, setFilterAltnames] = useState(false);
@@ -144,6 +145,7 @@ export default function Home() {
     const savedSelectedCountries = localStorage.getItem('selectedCountries');
     const savedStartsWith = localStorage.getItem('startsWith');
     const savedEndsWith = localStorage.getItem('endsWith');
+    const savedIncludes = localStorage.getItem('includes');
     const savedConvertCharacters = localStorage.getItem('convertCharacters');
     const savedSearchAlternateNames = localStorage.getItem('searchAlternateNames');
     const savedFilterAltnames = localStorage.getItem('filterAltnames');
@@ -156,6 +158,7 @@ export default function Home() {
     if (savedSelectedCountries) setSelectedCountries(JSON.parse(savedSelectedCountries));
     if (savedStartsWith) setStartsWith(savedStartsWith);
     if (savedEndsWith) setEndsWith(savedEndsWith);
+    if (savedIncludes) setIncludes(savedIncludes);
     if (savedConvertCharacters) setConvertCharacters(JSON.parse(savedConvertCharacters));
     if (savedSearchAlternateNames) setSearchAlternateNames(JSON.parse(savedSearchAlternateNames));
     if (savedFilterAltnames) setFilterAltnames(JSON.parse(savedFilterAltnames));
@@ -170,6 +173,7 @@ export default function Home() {
     localStorage.setItem('selectedCountries', JSON.stringify(selectedCountries));
     localStorage.setItem('startsWith', startsWith);
     localStorage.setItem('endsWith', endsWith);
+    localStorage.setItem('includes', includes);
     localStorage.setItem('convertCharacters', JSON.stringify(convertCharacters));
     localStorage.setItem('searchAlternateNames', JSON.stringify(searchAlternateNames));
     localStorage.setItem('filterAltnames', JSON.stringify(filterAltnames));
@@ -177,7 +181,7 @@ export default function Home() {
     localStorage.setItem('showUnusedCitiesOnly', JSON.stringify(showUnusedCitiesOnly));
     localStorage.setItem('sortOption', sortOption);
     localStorage.setItem('sortDirection', sortDirection);
-  }, [minPopulation, selectedCountries, startsWith, endsWith, convertCharacters, searchAlternateNames, filterAltnames, usedCities, showUnusedCitiesOnly, sortOption, sortDirection]);
+  }, [minPopulation, selectedCountries, startsWith, endsWith, includes, convertCharacters, searchAlternateNames, filterAltnames, usedCities, showUnusedCitiesOnly, sortOption, sortDirection]);
 
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
@@ -201,6 +205,7 @@ export default function Home() {
     if (minPopulation) params.append('minPopulation', minPopulation);
     if (startsWith) params.append('startsWith', startsWith);
     if (endsWith) params.append('endsWith', endsWith);
+    if (includes) params.append('includes', includes);
     params.append('convertCharacters', String(convertCharacters));
     params.append('searchAlternateNames', String(searchAlternateNames));
 
@@ -220,7 +225,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchCities();
-  }, [minPopulation, startsWith, endsWith, convertCharacters, searchAlternateNames, selectedCountries, countries]);
+  }, [minPopulation, startsWith, endsWith, includes, convertCharacters, searchAlternateNames, selectedCountries, countries]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -341,7 +346,7 @@ export default function Home() {
         convertCharacters={convertCharacters}
       />
     ),
-    [filteredCities, usedCities, toggleUsedCity, startsWith, endsWith, filterAltnames, convertCharacters]
+    [filteredCities, usedCities, toggleUsedCity, startsWith, endsWith, includes, filterAltnames, convertCharacters]
   );
 
   const spinner = useMemo(() => <SpinnerCircular size={50} thickness={100} speed={100} color="rgba(0, 150, 251, 1)" secondaryColor="rgba(237, 237, 237, 0.44)" />, []);
@@ -462,6 +467,10 @@ export default function Home() {
       <div style={{ marginBottom: '0.5rem' }}>
         <label>Ends With: </label>
         <input type="text" value={endsWith} onChange={(e) => setEndsWith(e.target.value)} />
+      </div>
+      <div style={{ marginBottom: '0.5rem' }}>
+        <label>Includes (seperated with ;): </label>
+        <input type="text" value={includes} onChange={(e) => setIncludes(e.target.value)} />
       </div>
       <div style={{ marginBottom: '0.5rem' }}>
         <label>Romanize Characters: </label>
