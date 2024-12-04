@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     const convertCharacters = searchParams.get('convertCharacters') === 'true';
     const searchAlternateNames = searchParams.get('searchAlternateNames') === 'true';
 
-    if (!countries || (countries === 'all' && !startsWith && !endsWith)) return NextResponse.json([]);
+    if (!countries) return NextResponse.json([]);
     if (countries === 'all') countries = null;
 
     let filteredCities = cities;
