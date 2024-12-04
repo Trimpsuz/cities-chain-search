@@ -9,6 +9,7 @@ import { Modal } from './components/Modal';
 import axios from 'axios';
 import { supabase } from '@/lib/supabaseClient';
 import { SpinnerCircular } from 'spinners-react';
+import { CityList } from './components/CityList';
 
 interface Country {
   code: string;
@@ -230,18 +231,24 @@ export default function Home() {
     fetchCountries();
   }, []);
 
-  const toggleUsedCity = (cityId: string) => {
-    const newUsedCities = new Set(usedCities);
-    if (newUsedCities.has(cityId)) {
-      newUsedCities.delete(cityId);
-    } else {
-      newUsedCities.add(cityId);
-    }
+  const toggleUsedCity = useCallback(
+    (cityId: string) => {
+      const newUsedCities = new Set(usedCities);
 
-    setUsedCities(newUsedCities);
+      if (newUsedCities.has(cityId)) {
+        newUsedCities.delete(cityId);
+      } else {
+        newUsedCities.add(cityId);
+      }
 
-    if (user) saveUsedCitiesToDatabase(user.id, newUsedCities);
-  };
+      setUsedCities(newUsedCities);
+
+      if (user) {
+        saveUsedCitiesToDatabase(user.id, newUsedCities);
+      }
+    },
+    [usedCities, setUsedCities, user, saveUsedCitiesToDatabase]
+  );
 
   const clearAllUsedCities = useCallback(() => {
     setUsedCities(new Set());
@@ -319,14 +326,31 @@ export default function Home() {
     setCities(sortCities(cities));
   }, [sortOption, sortDirection, usedCities]);
 
-  const filteredCities = showUnusedCitiesOnly ? cities.filter((city) => !usedCities.has(city.id)) : cities;
+  const filteredCities = useMemo(() => {
+    return showUnusedCitiesOnly ? cities.filter((city) => !usedCities.has(city.id)) : cities;
+  }, [showUnusedCitiesOnly, cities, usedCities]);
+
+  const cityList = useMemo(
+    () => (
+      <CityList
+        filteredCities={filteredCities}
+        usedCities={usedCities}
+        toggleUsedCity={toggleUsedCity}
+        startsWith={startsWith}
+        endsWith={endsWith}
+        filterAltnames={filterAltnames}
+        convertCharacters={convertCharacters}
+      />
+    ),
+    [filteredCities, usedCities, toggleUsedCity, startsWith, endsWith, filterAltnames, convertCharacters]
+  );
 
   const spinner = useMemo(() => <SpinnerCircular size={50} thickness={100} speed={100} color="rgba(0, 150, 251, 1)" secondaryColor="rgba(237, 237, 237, 0.44)" />, []);
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>{spinner}</div>;
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div style={{ padding: '2rem', height: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ marginRight: '1rem' }}>Cities Chain Search</h1>
         <a href="https://github.com/trimpsuz/cities-chain-search" style={{ textDecoration: 'none' }}>
@@ -489,36 +513,7 @@ export default function Home() {
       {clearModal}
       {selectAllModal}
 
-      <ul>
-        {filteredCities.map((city) => (
-          <li key={city.id}>
-            <button style={{ cursor: 'pointer' }} onClick={() => toggleUsedCity(city.id)}>
-              {usedCities.has(city.id) ? '✅' : '❌'}
-            </button>{' '}
-            {city.name} (Population: {city.population})
-            {city.alternateNames?.length
-              ? filterAltnames
-                ? convertCharacters
-                  ? ` [Alt Names: ${city.alternateNames
-                      .split(',')
-                      .filter(
-                        (name) =>
-                          anyAscii(removeSpecial(name.toLowerCase())).startsWith(anyAscii(removeSpecial(startsWith.toLowerCase()))) &&
-                          anyAscii(removeSpecial(name.toLowerCase())).endsWith(anyAscii(removeSpecial(endsWith.toLowerCase())))
-                      )
-                      .join(', ')}]`
-                  : ` [Alt Names: ${city.alternateNames
-                      .split(',')
-                      .filter(
-                        (name) =>
-                          removeSpecial(name.toLowerCase()).startsWith(removeSpecial(startsWith.toLowerCase())) && removeSpecial(name.toLowerCase()).endsWith(removeSpecial(endsWith.toLowerCase()))
-                      )
-                      .join(', ')}]`
-                : ` [Alt Names: ${city.alternateNames.split(',').join(', ')}]`
-              : ''}
-          </li>
-        ))}
-      </ul>
+      {cityList}
     </div>
   );
 }

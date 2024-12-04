@@ -12,6 +12,7 @@
     "@million/lint": "^1.0.13",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.46.2",
+    "@tanstack/react-virtual": "^3.10.9",
     "any-ascii": "^0.3.2",
     "axios": "^1.7.7",
     "multiselect-react-dropdown": "^2.0.25",
