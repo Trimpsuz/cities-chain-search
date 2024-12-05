@@ -136,6 +136,22 @@ export default function Home() {
   const [sortOption, setSortOption] = useState('alphabetical');
   const [sortDirection, setSortDirection] = useState('asc');
 
+  const [debouncedMinPopulation, setDebouncedMinPopulation] = useState(minPopulation);
+  const [debouncedStartsWith, setDebouncedStartsWith] = useState(startsWith);
+  const [debouncedEndsWith, setDebouncedEndsWith] = useState(endsWith);
+  const [debouncedIncludes, setDebouncedIncludes] = useState(includes);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedMinPopulation(minPopulation);
+      setDebouncedStartsWith(startsWith);
+      setDebouncedEndsWith(endsWith);
+      setDebouncedIncludes(includes);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [minPopulation, startsWith, endsWith, includes]);
+
   useEffect(() => {
     citiesRef.current = cities;
   }, [cities]);
@@ -225,7 +241,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchCities();
-  }, [minPopulation, startsWith, endsWith, includes, convertCharacters, searchAlternateNames, selectedCountries, countries]);
+  }, [debouncedMinPopulation, debouncedStartsWith, debouncedEndsWith, debouncedIncludes, convertCharacters, searchAlternateNames, selectedCountries, countries]);
 
   useEffect(() => {
     const fetchCountries = async () => {
