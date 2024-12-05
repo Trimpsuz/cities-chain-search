@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import anyAscii from 'any-ascii';
 import Multiselect from 'multiselect-react-dropdown';
-import { removeSpecial } from './utils/helpers';
 import type { City } from './types';
 import { Modal } from './components/Modal';
 import axios from 'axios';
@@ -140,13 +138,24 @@ export default function Home() {
   const [debouncedStartsWith, setDebouncedStartsWith] = useState(startsWith);
   const [debouncedEndsWith, setDebouncedEndsWith] = useState(endsWith);
   const [debouncedIncludes, setDebouncedIncludes] = useState(includes);
+  const isInitialInput = useRef(true);
 
   useEffect(() => {
+    if (isInitialInput.current) {
+      setDebouncedMinPopulation(minPopulation);
+      setDebouncedStartsWith(startsWith);
+      setDebouncedEndsWith(endsWith);
+      setDebouncedIncludes(includes);
+      isInitialInput.current = false;
+      return;
+    }
+
     const handler = setTimeout(() => {
       setDebouncedMinPopulation(minPopulation);
       setDebouncedStartsWith(startsWith);
       setDebouncedEndsWith(endsWith);
       setDebouncedIncludes(includes);
+      isInitialInput.current = true;
     }, 500);
 
     return () => clearTimeout(handler);
