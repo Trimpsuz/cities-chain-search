@@ -29,6 +29,7 @@ export const CityList = ({
     count: filteredCities.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 21,
+    paddingEnd: 32,
   });
 
   const items = virtualizer.getVirtualItems();
