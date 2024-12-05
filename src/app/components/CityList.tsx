@@ -10,6 +10,7 @@ export const CityList = ({
   toggleUsedCity,
   startsWith,
   endsWith,
+  includes,
   filterAltnames,
   convertCharacters,
 }: {
@@ -18,6 +19,7 @@ export const CityList = ({
   toggleUsedCity: (cityId: string) => void;
   startsWith: string;
   endsWith: string;
+  includes: string;
   filterAltnames: boolean;
   convertCharacters: boolean;
 }) => {
@@ -66,10 +68,18 @@ export const CityList = ({
               .split(',')
               .filter((name) => {
                 const processedName = convertCharacters ? anyAscii(removeSpecial(name.toLowerCase())) : removeSpecial(name.toLowerCase());
+                let parsedIncludes = includes
+                  .replace(/^[;]+|[;]+$/g, '')
+                  .split(';')
+                  .map((str) => str.toLowerCase());
+                if (convertCharacters) {
+                  parsedIncludes = parsedIncludes.map((str) => anyAscii(str));
+                }
 
                 return (
                   processedName.startsWith(convertCharacters ? anyAscii(removeSpecial(startsWith.toLowerCase())) : removeSpecial(startsWith.toLowerCase())) &&
-                  processedName.endsWith(convertCharacters ? anyAscii(removeSpecial(endsWith.toLowerCase())) : removeSpecial(endsWith.toLowerCase()))
+                  processedName.endsWith(convertCharacters ? anyAscii(removeSpecial(endsWith.toLowerCase())) : removeSpecial(endsWith.toLowerCase())) &&
+                  parsedIncludes.every((str) => processedName.includes(str))
                 );
               })
               .join(', ');

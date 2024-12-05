@@ -342,6 +342,7 @@ export default function Home() {
         toggleUsedCity={toggleUsedCity}
         startsWith={startsWith}
         endsWith={endsWith}
+        includes={includes}
         filterAltnames={filterAltnames}
         convertCharacters={convertCharacters}
       />
