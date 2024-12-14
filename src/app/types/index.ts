@@ -5,6 +5,8 @@ export interface City {
   latitude: number;
   longitude: number;
   countryCode: string;
+  admin1: string;
+  admin2?: string;
   population: number;
 }
 
@@ -14,4 +16,13 @@ export interface Country {
   iso3: string;
   name: string;
   default: string;
+}
+
+export interface Admin {
+  id: string;
+  countryCode: string;
+  admin1: string;
+  admin2?: string;
+  name: string;
+  alternateNames: string;
 }

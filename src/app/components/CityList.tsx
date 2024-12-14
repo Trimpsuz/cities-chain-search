@@ -66,7 +66,8 @@ export const CityList = ({
           {items.map((virtualRow) => {
             const city = filteredCities[virtualRow.index];
             const altNames = city.alternateNames
-              .split(',')
+              .split(';')
+              .map((str) => str.split(',')[0])
               .filter((name) => {
                 const processedName = convertCharacters ? anyAscii(removeSpecial(name.toLowerCase())) : removeSpecial(name.toLowerCase());
                 let parsedIncludes = includes
@@ -83,7 +84,7 @@ export const CityList = ({
                   parsedIncludes.every((str) => processedName.includes(str))
                 );
               })
-              .join(', ');
+              .join('; ');
 
             return (
               <div key={virtualRow.key} ref={virtualizer.measureElement} data-index={virtualRow.index}>
@@ -91,7 +92,7 @@ export const CityList = ({
                   {usedCities.has(city.id) ? '✅' : '❌'}
                 </button>{' '}
                 {city.name} (Population: {city.population})
-                {city.alternateNames?.length ? (filterAltnames ? (altNames ? ` [Alt Names: ${altNames}]` : '') : ` [Alt Names: ${city.alternateNames.split(',').join(', ')}]`) : ''}
+                {city.alternateNames?.length ? (filterAltnames ? (altNames ? ` [Alt Names: ${altNames}]` : '') : ` [Alt Names: ${city.alternateNames.split(';').join('; ')}]`) : ''}
               </div>
             );
           })}

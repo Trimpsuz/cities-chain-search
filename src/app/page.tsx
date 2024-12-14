@@ -332,8 +332,24 @@ export default function Home() {
         const bUsed = usedCities.has(b.id);
         comparison = aUsed === bUsed ? 0 : aUsed ? 1 : -1;
       } else if (sortOption === 'nameLength') {
-        const aNames = searchAlternateNames ? [a.name, ...(a.alternateNames?.split(',').filter((name) => name.trim() !== '') || [])] : [a.name];
-        const bNames = searchAlternateNames ? [b.name, ...(b.alternateNames?.split(',').filter((name) => name.trim() !== '') || [])] : [b.name];
+        const aNames = searchAlternateNames
+          ? [
+              a.name,
+              ...(a.alternateNames
+                ?.split(';')
+                .map((str) => str.split(',')[0])
+                .filter((name) => name.trim() !== '') || []),
+            ]
+          : [a.name];
+        const bNames = searchAlternateNames
+          ? [
+              b.name,
+              ...(b.alternateNames
+                ?.split(';')
+                .map((str) => str.split(',')[0])
+                .filter((name) => name.trim() !== '') || []),
+            ]
+          : [b.name];
 
         const aMinLength = Math.min(...aNames.map((name) => name.length));
         const bMinLength = Math.min(...bNames.map((name) => name.length));

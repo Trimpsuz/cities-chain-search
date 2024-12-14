@@ -1,6 +1,14 @@
-import type { City } from '../types';
+import type { City, Admin } from '../types';
 
-export const parseGeonames = (data: string): City[] => {
+interface Country {
+  id: string;
+  countryCode: string;
+  iso3: string;
+  name: string;
+  alternateNames: string;
+}
+
+export const parseCities = (data: string): City[] => {
   const lines = data.split('\n').filter((line) => line.trim() !== '');
 
   const cityMap: Record<string, City> = {};
@@ -14,6 +22,8 @@ export const parseGeonames = (data: string): City[] => {
     const name = fields[1];
     const population = parseInt(fields[2]) || 0;
     const countryCode = fields[3];
+    const admin1 = fields[4];
+    const admin2 = fields[5];
     const latitude = parseFloat(fields[8]) || 0;
     const longitude = parseFloat(fields[9]) || 0;
     const isDefault = fields[7] === '1';
@@ -29,6 +39,8 @@ export const parseGeonames = (data: string): City[] => {
         latitude,
         longitude,
         countryCode,
+        admin1,
+        admin2,
         population,
       };
     } else {
@@ -42,4 +54,80 @@ export const parseGeonames = (data: string): City[] => {
   }
 
   return Object.values(cityMap);
+};
+
+export const parseAdmin = (data: string): Admin[] => {
+  const lines = data.split('\n').filter((line) => line.trim() !== '');
+
+  const adminMap: Record<string, Admin> = {};
+
+  for (const line of lines) {
+    const fields = line.split('\t');
+
+    if (fields.length < 5) continue;
+
+    const id = fields[0];
+    const countryCode = fields[1];
+    const admin1 = fields[2];
+    const admin2 = fields.length === 6 ? fields[3] : undefined;
+    const name = fields[fields.length - 2];
+    const isDefault = fields[fields.length - 1] === '1';
+
+    if (!adminMap[id]) {
+      adminMap[id] = {
+        id,
+        name: isDefault ? name : '',
+        alternateNames: isDefault ? '' : name,
+        countryCode,
+        admin1,
+        admin2,
+      };
+    } else {
+      const admin = adminMap[id];
+      if (isDefault && name !== admin.name) {
+        admin.name = name;
+      } else {
+        admin.alternateNames += admin.alternateNames ? `,${name}` : name;
+      }
+    }
+  }
+
+  return Object.values(adminMap);
+};
+
+export const parseCountries = (data: string): Country[] => {
+  const lines = data.split('\n').filter((line) => line.trim() !== '');
+
+  const countryMap: Record<string, Country> = {};
+
+  for (const line of lines) {
+    const fields = line.split('\t');
+
+    if (fields.length < 5) continue;
+
+    const id = fields[0];
+    const countryCode = fields[1];
+    const iso3 = fields[2];
+    const name = fields[3];
+    const isDefault = fields[4] === '1';
+
+    if (!countryMap[id]) {
+      countryMap[id] = {
+        id,
+        countryCode,
+        iso3,
+        name: isDefault ? name : '',
+        alternateNames: isDefault ? '' : name,
+      };
+    } else {
+      const country = countryMap[id];
+      if (isDefault && name !== country.name) {
+        country.name = name;
+      } else {
+        country.alternateNames += country.alternateNames ? `,${name}` : name;
+      }
+    }
+  }
+
+  return Object.values(countryMap);
 };

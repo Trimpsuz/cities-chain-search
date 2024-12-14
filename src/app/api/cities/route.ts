@@ -1,26 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
-import { parseGeonames } from '../../utils/parseGeonames';
+import { parseCities, parseAdmin, parseCountries } from '../../utils/parseGeonames';
 import anyAscii from 'any-ascii';
 import { removeSpecial } from '../../utils/helpers';
-import type { City } from '../../types';
+import type { City, Admin } from '../../types';
+import path from 'path';
+import fs from 'fs';
+
+interface Country {
+  id: string;
+  countryCode: string;
+  iso3: string;
+  name: string;
+  alternateNames: string;
+}
 
 let cities: City[] = [];
+let countries: Country[] = [];
+
+const admin1 = new Map<string, string>();
+const admin2 = new Map<string, string>();
+const cityMap = new Map<string, City[]>();
+const altNamesToPop = new Map<string, { id: string; name: string; population: number; countryCode: string; admin1: string; admin2?: string }>();
 
 async function loadCities() {
   if (cities.length === 0) {
     try {
       const response = await axios.get('https://raw.githubusercontent.com/GlutenFreeGrapes/cities-chain/refs/heads/main/data/cities.txt');
-      cities = parseGeonames(response.data).sort((a, b) => a.name.localeCompare(b.name));
+      cities = parseCities(response.data).sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const c of cities) {
+        if (!cityMap.has(c.name)) cityMap.set(c.name, []);
+        cityMap.get(c.name)!.push(c);
+        c.alternateNames.split(',').forEach((altName) => {
+          if (altNamesToPop.has(altName) && altNamesToPop.get(altName)!.population > c.population) return;
+          altNamesToPop.set(altName, { id: c.id, name: c.name, population: c.population, countryCode: c.countryCode, admin1: c.admin1, admin2: c.admin2 });
+        });
+      }
     } catch (error) {
       throw new Error(`Failed to fetch city data: ${axios.isAxiosError(error) ? error.message : 'Unknown error'}`);
     }
   }
 }
 
+async function loadAdmin() {
+  if (admin1.size === 0) {
+    try {
+      const response = await axios.get('https://raw.githubusercontent.com/GlutenFreeGrapes/cities-chain/refs/heads/main/data/admin1.txt');
+      const parsed = parseAdmin(response.data).sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const a of parsed) {
+        admin1.set(`${a.countryCode}-${a.admin1}`, a.name);
+      }
+    } catch (error) {
+      throw new Error(`Failed to fetch admin1 data: ${axios.isAxiosError(error) ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  if (admin2.size === 0) {
+    try {
+      const response = await axios.get('https://raw.githubusercontent.com/GlutenFreeGrapes/cities-chain/refs/heads/main/data/admin2.txt');
+      const parsed = parseAdmin(response.data).sort((a, b) => a.name.localeCompare(b.name));
+
+      for (const a of parsed) {
+        admin2.set(`${a.countryCode}-${a.admin1}-${a.admin2}`, a.name);
+      }
+    } catch (error) {
+      throw new Error(`Failed to fetch admin1 data: ${axios.isAxiosError(error) ? error.message : 'Unknown error'}`);
+    }
+  }
+}
+
+async function loadCountries() {
+  if (countries.length === 0) {
+    countries = parseCountries(fs.readFileSync(path.join(process.cwd(), 'public', 'countries.txt'), 'utf-8'));
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     await loadCities();
+    await loadAdmin();
+    await loadCountries();
 
     const { searchParams } = new URL(req.url);
     const minPopulation = searchParams.get('minPopulation');
@@ -114,6 +175,100 @@ export async function GET(req: NextRequest) {
 
         return cityNameMatches || alternateNamesMatch;
       });
+    }
+
+    for (const city of filteredCities) {
+      let matches: City[] = [];
+      if ((matches = cityMap.get(city.name)?.filter((c) => c.id !== city.id && c.population > city.population) || []).length) {
+        let countryRequired = false;
+        let admin1Required = false;
+        let admin2Required = false;
+
+        for (const match of matches) {
+          if (match.countryCode !== city.countryCode) {
+            countryRequired = true;
+          } else if (match.admin1 !== city.admin1) {
+            admin1Required = true;
+          } else if (match.admin2 !== city.admin2) {
+            admin2Required = true;
+          }
+        }
+
+        if (!countryRequired && !admin1Required && !admin2Required) continue;
+
+        city.name +=
+          ', ' +
+          [admin1Required && admin1.get(`${city.countryCode}-${city.admin1}`), admin2Required && admin2.get(`${city.countryCode}-${city.admin1}-${city.admin2}`), countryRequired && city.countryCode]
+            .filter(Boolean)
+            .join(', ');
+      }
+
+      if (city.alternateNames === '') continue;
+
+      matches = [];
+      city.alternateNames = city.alternateNames.split(',').join(';');
+
+      for (const name of city.alternateNames.split(';')) {
+        if ((matches = cityMap.get(name)?.filter((c) => c.id !== city.id) || []).length) {
+          let countryRequired = false;
+          let admin1Required = false;
+          let admin2Required = false;
+
+          for (const match of matches) {
+            if (match.countryCode !== city.countryCode) {
+              countryRequired = true;
+            } else if (match.admin1 !== city.admin1) {
+              admin1Required = true;
+            } else if (match.admin2 !== city.admin2) {
+              admin2Required = true;
+            }
+          }
+
+          if (!countryRequired && !admin1Required && !admin2Required) continue;
+
+          let alternateNames = city.alternateNames.split(';');
+
+          alternateNames[alternateNames.indexOf(name)] =
+            name +
+            ', ' +
+            [admin1Required && admin1.get(`${city.countryCode}-${city.admin1}`), admin2Required && admin2.get(`${city.countryCode}-${city.admin1}-${city.admin2}`), countryRequired && city.countryCode]
+              .filter(Boolean)
+              .join(', ');
+
+          city.alternateNames = alternateNames.join(';');
+
+          continue;
+        }
+
+        let match: { id: string; name: string; population: number; countryCode: string; admin1: string; admin2?: string } | undefined;
+
+        if ((match = altNamesToPop.get(name)) && match.population > city.population) {
+          let countryRequired = false;
+          let admin1Required = false;
+          let admin2Required = false;
+
+          if (match.countryCode !== city.countryCode) {
+            countryRequired = true;
+          } else if (match.admin1 !== city.admin1) {
+            admin1Required = true;
+          } else if (match.admin2 !== city.admin2) {
+            admin2Required = true;
+          }
+
+          if (!countryRequired && !admin1Required && !admin2Required) continue;
+
+          let alternateNames = city.alternateNames.split(';');
+
+          alternateNames[alternateNames.indexOf(name)] =
+            name +
+            ', ' +
+            [admin1Required && admin1.get(`${city.countryCode}-${city.admin1}`), admin2Required && admin2.get(`${city.countryCode}-${city.admin1}-${city.admin2}`), countryRequired && city.countryCode]
+              .filter(Boolean)
+              .join(', ');
+
+          city.alternateNames = alternateNames.join(';');
+        }
+      }
     }
 
     return NextResponse.json(filteredCities);
