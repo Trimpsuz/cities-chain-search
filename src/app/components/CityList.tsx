@@ -84,6 +84,7 @@ export const CityList = ({
                   parsedIncludes.every((str) => processedName.includes(str))
                 );
               })
+              .map((name) => city.alternateNames.split(';').find((altName) => altName.startsWith(name)))
               .join('; ');
 
             return (
