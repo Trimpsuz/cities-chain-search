@@ -3,7 +3,7 @@ import axios from 'axios';
 import { parseCities, parseAdmin, parseCountries } from '../../utils/parseGeonames';
 import anyAscii from 'any-ascii';
 import { removeSpecial } from '../../utils/helpers';
-import type { City, Admin } from '../../types';
+import type { City } from '../../types';
 import path from 'path';
 import fs from 'fs';
 
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
     if (!countries) return NextResponse.json([]);
     if (countries === 'all') countries = null;
 
-    let filteredCities = cities;
+    let filteredCities = cities.map((city) => Object.assign({}, city));
 
     if (countries) {
       const countryList = countries.split(',').map((code) => code.trim().toUpperCase());
@@ -242,7 +242,7 @@ export async function GET(req: NextRequest) {
 
         let match: { id: string; name: string; population: number; countryCode: string; admin1: string; admin2?: string } | undefined;
 
-        if ((match = altNamesToPop.get(name)) && match.population > city.population) {
+        if ((match = altNamesToPop.get(name)) && match.population > city.population && match.id !== city.id) {
           let countryRequired = false;
           let admin1Required = false;
           let admin2Required = false;
