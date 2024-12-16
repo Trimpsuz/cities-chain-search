@@ -139,6 +139,7 @@ export default function Home() {
   const [debouncedEndsWith, setDebouncedEndsWith] = useState(endsWith);
   const [debouncedIncludes, setDebouncedIncludes] = useState(includes);
   const isInitialInput = useRef(true);
+  const latestRequestId = useRef(0);
 
   useEffect(() => {
     if (isInitialInput.current) {
@@ -241,8 +242,10 @@ export default function Home() {
         params.append('countries', selectedCountries.map((country) => country.code).join(','));
       }
 
+      const requestId = Math.random();
+      latestRequestId.current = requestId;
       const data = (await axios.get(`/api/cities?${params.toString()}`)).data;
-      setCities(sortCities(data));
+      if (requestId === latestRequestId.current) setCities(sortCities(data));
     } else {
       setCities([]);
     }
