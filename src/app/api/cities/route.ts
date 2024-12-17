@@ -30,11 +30,11 @@ async function loadCities() {
       cities = parseCities(response.data).sort((a, b) => a.name.localeCompare(b.name));
 
       for (const c of cities) {
-        if (!cityMap.has(c.name)) cityMap.set(c.name, []);
-        cityMap.get(c.name)!.push(c);
+        if (!cityMap.has(c.name.toLowerCase())) cityMap.set(c.name.toLowerCase(), []);
+        cityMap.get(c.name.toLowerCase())!.push(c);
         c.alternateNames.split(',').forEach((altName) => {
           if (altNamesToPop.has(altName) && altNamesToPop.get(altName)!.population > c.population) return;
-          altNamesToPop.set(altName, { id: c.id, name: c.name, population: c.population, countryCode: c.countryCode, admin1: c.admin1, admin2: c.admin2 });
+          altNamesToPop.set(altName.toLowerCase(), { id: c.id, name: c.name, population: c.population, countryCode: c.countryCode, admin1: c.admin1, admin2: c.admin2 });
         });
       }
     } catch (error) {
@@ -179,7 +179,7 @@ export async function GET(req: NextRequest) {
 
     for (const city of filteredCities) {
       let matches: City[] = [];
-      if ((matches = cityMap.get(city.name)?.filter((c) => c.id !== city.id && c.population > city.population) || []).length) {
+      if ((matches = cityMap.get(city.name.toLowerCase())?.filter((c) => c.id !== city.id && c.population > city.population) || []).length) {
         let countryRequired = false;
         let admin1Required = false;
         let admin2Required = false;
@@ -209,7 +209,7 @@ export async function GET(req: NextRequest) {
       city.alternateNames = city.alternateNames.split(',').join(';');
 
       for (const name of city.alternateNames.split(';')) {
-        if ((matches = cityMap.get(name)?.filter((c) => c.id !== city.id) || []).length) {
+        if ((matches = cityMap.get(name.toLowerCase())?.filter((c) => c.id !== city.id) || []).length) {
           let countryRequired = false;
           let admin1Required = false;
           let admin2Required = false;
@@ -242,7 +242,7 @@ export async function GET(req: NextRequest) {
 
         let match: { id: string; name: string; population: number; countryCode: string; admin1: string; admin2?: string } | undefined;
 
-        if ((match = altNamesToPop.get(name)) && match.population > city.population && match.id !== city.id) {
+        if ((match = altNamesToPop.get(name.toLowerCase())) && match.population > city.population && match.id !== city.id) {
           let countryRequired = false;
           let admin1Required = false;
           let admin2Required = false;
