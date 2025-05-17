@@ -271,6 +271,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    filteredCities = filteredCities.map((city) => ({
+      ...city,
+      ...(admin1.get(`${city.countryCode}-${city.admin1}`) != null && {
+        admin1Name: admin1.get(`${city.countryCode}-${city.admin1}`),
+      }),
+    }));
+
     return NextResponse.json(filteredCities);
   } catch (error: unknown) {
     const errorMessage = axios.isAxiosError(error) ? error.message : error instanceof Error ? error.message : 'An unknown error occurred';

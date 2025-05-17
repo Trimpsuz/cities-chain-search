@@ -8,6 +8,7 @@ export interface City {
   admin1: string;
   admin2?: string;
   population: number;
+  admin1Name?: string;
 }
 
 export interface Country {
