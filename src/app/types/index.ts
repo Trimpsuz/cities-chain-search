@@ -9,6 +9,9 @@ export interface City {
   admin2?: string;
   population: number;
   admin1Name?: string;
+  countryRequired?: boolean;
+  admin1Required?: boolean;
+  admin2Required?: boolean;
 }
 
 export interface Country {

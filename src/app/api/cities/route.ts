@@ -177,6 +177,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    filteredCities = filteredCities.map((city) => ({
+      ...city,
+      countryRequired: false,
+      admin1Required: false,
+      admin2Required: false,
+    }));
+
     for (const city of filteredCities) {
       let matches: City[] = [];
       if ((matches = cityMap.get(city.name.toLowerCase())?.filter((c) => c.id !== city.id && c.population > city.population) || []).length) {
@@ -201,6 +208,10 @@ export async function GET(req: NextRequest) {
           [admin1Required && admin1.get(`${city.countryCode}-${city.admin1}`), admin2Required && admin2.get(`${city.countryCode}-${city.admin1}-${city.admin2}`), countryRequired && city.countryCode]
             .filter(Boolean)
             .join(', ');
+
+        city.countryRequired = countryRequired;
+        city.admin1Required = admin1Required;
+        city.admin2Required = admin2Required;
       }
 
       if (city.alternateNames === '') continue;
