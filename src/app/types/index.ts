@@ -19,7 +19,7 @@ export interface Country {
   country: string;
   iso3: string;
   name: string;
-  default: string;
+  continent: string;
 }
 
 export interface Admin {
