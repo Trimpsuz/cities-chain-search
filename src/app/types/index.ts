@@ -16,7 +16,7 @@ export interface City {
 
 export interface Country {
   geonameid: string;
-  country: string;
+  code: string;
   iso3: string;
   name: string;
   continent: string;

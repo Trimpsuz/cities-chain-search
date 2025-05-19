@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const fields = line.split('\t');
     return {
       geonameid: fields[16],
-      country: fields[0],
+      code: fields[0],
       iso3: fields[1],
       name: fields[4],
       continent: fields[8],
