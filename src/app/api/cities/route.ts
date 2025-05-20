@@ -12,7 +12,6 @@ interface Country {
   countryCode: string;
   iso3: string;
   name: string;
-  alternateNames: string;
 }
 
 let cities: City[] = [];

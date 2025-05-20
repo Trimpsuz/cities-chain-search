@@ -5,7 +5,6 @@ interface Country {
   countryCode: string;
   iso3: string;
   name: string;
-  alternateNames: string;
 }
 
 export const parseCities = (data: string): City[] => {
@@ -105,27 +104,18 @@ export const parseCountries = (data: string): Country[] => {
 
     if (fields.length < 5) continue;
 
-    const id = fields[0];
-    const countryCode = fields[1];
-    const iso3 = fields[2];
-    const name = fields[3];
-    const isDefault = fields[4] === '1';
+    const id = fields[16];
+    const countryCode = fields[0];
+    const iso3 = fields[1];
+    const name = fields[4];
 
     if (!countryMap[id]) {
       countryMap[id] = {
         id,
         countryCode,
         iso3,
-        name: isDefault ? name : '',
-        alternateNames: isDefault ? '' : name,
+        name,
       };
-    } else {
-      const country = countryMap[id];
-      if (isDefault && name !== country.name) {
-        country.name = name;
-      } else {
-        country.alternateNames += country.alternateNames ? `,${name}` : name;
-      }
     }
   }
 
