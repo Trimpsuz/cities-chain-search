@@ -91,6 +91,8 @@ export async function GET(req: NextRequest) {
     const convertCharacters = searchParams.get('convertCharacters') === 'true';
     const searchAlternateNames = searchParams.get('searchAlternateNames') === 'true';
 
+    const gtc = searchParams.get('gtc') === 'true';
+
     if (!countries) return NextResponse.json([]);
     if (countries === 'all') countries = null;
 
@@ -287,6 +289,14 @@ export async function GET(req: NextRequest) {
         admin1Name: admin1.get(`${city.countryCode}-${city.admin1}`),
       }),
     }));
+
+    if (gtc) {
+      filteredCities = filteredCities.map((city) => ({
+        ...city,
+        name: city.name.replace(/""|"/g, (m) => (m === '""' ? '"' : '')),
+        alternateNames: city.alternateNames.replace(/""|"/g, (m) => (m === '""' ? '"' : '')),
+      }));
+    }
 
     return NextResponse.json(filteredCities);
   } catch (error: unknown) {
