@@ -16,9 +16,9 @@
     "any-ascii": "^0.3.2",
     "axios": "^1.7.7",
     "multiselect-react-dropdown": "^2.0.25",
-    "next": "15.2.4",
-    "react": "19.0.0-rc-66855b96-20241106",
-    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "next": "15.2.6",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "spinners-react": "^1.0.10"
   },
   "devDependencies": {
