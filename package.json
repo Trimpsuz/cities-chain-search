@@ -19,7 +19,8 @@
     "next": "15.2.8",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "spinners-react": "^1.0.10"
+    "spinners-react": "^1.0.10",
+    "xxhash-wasm": "^1.1.0"
   },
   "devDependencies": {
     "typescript": "^5",

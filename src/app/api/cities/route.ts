@@ -6,6 +6,7 @@ import { removeSpecial } from '../../utils/helpers';
 import type { City } from '../../types';
 import path from 'path';
 import fs from 'fs';
+import { citiesCache } from '@/lib/citiesCache';
 
 interface Country {
   id: string;
@@ -24,20 +25,15 @@ const altNamesToPop = new Map<string, { id: string; name: string; population: nu
 
 async function loadCities() {
   if (cities.length === 0) {
-    try {
-      const response = await axios.get('https://raw.githubusercontent.com/GlutenFreeGrapes/cities-chain/refs/heads/main/data/cities.txt');
-      cities = parseCities(response.data).sort((a, b) => a.name.localeCompare(b.name));
+    cities = await citiesCache.getCities();
 
-      for (const c of cities) {
-        if (!cityMap.has(c.name.toLowerCase())) cityMap.set(c.name.toLowerCase(), []);
-        cityMap.get(c.name.toLowerCase())!.push(c);
-        c.alternateNames.split(',').forEach((altName) => {
-          if (altNamesToPop.has(altName) && altNamesToPop.get(altName)!.population > c.population) return;
-          altNamesToPop.set(altName.toLowerCase(), { id: c.id, name: c.name, population: c.population, countryCode: c.countryCode, admin1: c.admin1, admin2: c.admin2 });
-        });
-      }
-    } catch (error) {
-      throw new Error(`Failed to fetch city data: ${axios.isAxiosError(error) ? error.message : 'Unknown error'}`);
+    for (const c of cities) {
+      if (!cityMap.has(c.name.toLowerCase())) cityMap.set(c.name.toLowerCase(), []);
+      cityMap.get(c.name.toLowerCase())!.push(c);
+      c.alternateNames.split(',').forEach((altName) => {
+        if (altNamesToPop.has(altName) && altNamesToPop.get(altName)!.population > c.population) return;
+        altNamesToPop.set(altName.toLowerCase(), { id: c.id, name: c.name, population: c.population, countryCode: c.countryCode, admin1: c.admin1, admin2: c.admin2 });
+      });
     }
   }
 }
