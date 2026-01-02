@@ -1,1 +1,1 @@
-export const removeSpecial = (str: string) => str.replace(/^\P{Letter}*|\P{Letter}*$/gu, '');
+export const removeSpecial = (str: string) => str.replace(/^[^\p{L}\p{M}]+|[^\p{L}\p{M}]+$/gu, '');

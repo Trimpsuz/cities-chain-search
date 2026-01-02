@@ -105,8 +105,8 @@ export async function GET(req: NextRequest) {
     }
 
     if (startsWith || endsWith) {
-      let startsWithNormalized = startsWith ? removeSpecial(startsWith.toLowerCase()) : '';
-      let endsWithNormalized = endsWith ? removeSpecial(endsWith.toLowerCase()) : '';
+      let startsWithNormalized: string = startsWith ? removeSpecial(startsWith.toLowerCase()) : '';
+      let endsWithNormalized: string = endsWith ? removeSpecial(endsWith.toLowerCase()) : '';
 
       if (convertCharacters) {
         startsWithNormalized = anyAscii(startsWithNormalized);
