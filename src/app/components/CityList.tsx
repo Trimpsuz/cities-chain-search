@@ -67,6 +67,7 @@ export const CityList = ({
             const city = filteredCities[virtualRow.index];
             const altNames = city.alternateNames
               .split(';')
+              .map((str) => str.split(',')[0])
               .filter((name) => {
                 const processedName = (convertCharacters ? anyAscii(removeSpecial(name.toLowerCase())) : removeSpecial(name.toLowerCase())).toLowerCase();
                 let parsedIncludes = includes
